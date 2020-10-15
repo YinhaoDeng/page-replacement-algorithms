@@ -11,7 +11,15 @@ public:
     char r_register;
     int c_counter;
 
-    Page();
+    Page() // default constructor
+    {
+        page_num = -1;
+        is_in_frame = false;
+        is_dirty = false;
+        r_register = '!';
+        c_counter = -1;
+    }
+
     Page(int page_num_, bool is_in_frame_, bool is_dirty_, char r_register_, int c_counter_)
     {
         page_num = page_num_;
@@ -20,5 +28,4 @@ public:
         r_register = r_register_;
         c_counter = c_counter_;
     }
-    // ~Page();
 };

@@ -5,6 +5,7 @@
         "xmemory0": "cpp",
         "iosfwd": "cpp",
         "string": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "vector": "cpp"
     }
 }
