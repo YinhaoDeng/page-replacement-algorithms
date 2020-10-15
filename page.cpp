@@ -8,7 +8,7 @@ public:
     int page_num = -1;
     bool is_in_frame = false;
     bool is_dirty = false;
-    char r_register;
+    char r_register; // r w
     int c_counter;
 
     Page() // default constructor

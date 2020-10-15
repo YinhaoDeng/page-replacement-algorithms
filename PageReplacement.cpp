@@ -77,10 +77,23 @@ void FIFO(int page_frames_num_, Page current_page) //有几个内存块
 {
     if(check_if_in_vec(frames_vec, current_page)) // if page is loaded
     {
-        cout<<"   Hit:   ";
-    }else 
+        cout<<"     Hit:      ";
+        cout<<"page  "<<current_page.page_num<<"                                        ";
+        
+
+        for (int i=0; i<frames_vec.size(); i++)
+        {
+            if(frames_vec[i].page_num == current_page.page_num)
+            {
+                // if(current_page.r_register == 'R' && frames_vec[i].r_register == 'W')
+                //     frames_vec[i].r_register = 'R';
+                if (current_page.r_register == 'W' && frames_vec[i].r_register == 'R')
+                    frames_vec[i].r_register = 'W';
+            }
+        }
+    }else
     {
-        cout<<"    Miss:   ";
+        cout<<"    Miss:       ";
 
         page_fault ++;
         total_disk_reads++;
@@ -97,11 +110,19 @@ void FIFO(int page_frames_num_, Page current_page) //有几个内存块
             // frames_vec[0].is_dirty == true; // set victim is_dirty = true
             cout<<" page  "<<current_page.page_num;
 
-            if (frames_vec[0].is_dirty == true)
+            bool f = false;
+            // if (frames_vec[0].is_dirty == true)
+            if (frames_vec[0].r_register == 'W')
+            {
+                // cout<<"  (DIRTY)  ";
                 total_disk_writes++;
-
+                f = true;
+            }
+            cout<<"  REPLACE: page   "<<frames_vec[0].page_num<<"                        ";
             frames_vec.erase(frames_vec.begin());  // remove the victim page (first page)
-            cout<<"  REPLACE: page   "<<frames_vec[0].page_num<<"    ";
+            
+            if(f == true)
+                cout<<"(DIRTY)          ";
             frames_vec.push_back(current_page);
         }
     }
@@ -152,8 +173,9 @@ void run(string algorithm_name, int page_frame_num)
              // algorithm name:
             if (algorithm_name == "FIFO")
             {
-                FIFO(page_frame_num, pages_vec[i]);
                 pages_vec[i].is_dirty = true;
+                FIFO(page_frame_num, pages_vec[i]);
+                
             }else if(algorithm_name == "LRU")
             {
 
@@ -206,5 +228,6 @@ int main(int argc, char ** argv)
     cout<<"events in trace:    "<<events_in_trace<<endl;
     cout<<"total disk reads:   "<<total_disk_reads<<endl;
     cout<<"total disk writes:   "<<total_disk_writes<<endl;
+    cout<<"page faults:         "<<page_fault<<endl;
     return 0; 
 }
