@@ -129,6 +129,71 @@ void FIFO(int page_frames_num_, Page current_page) //有几个内存块
 }
 
 
+void LRU(int page_frames_num_, Page current_page)
+{
+    if(check_if_in_vec(frames_vec, current_page)) // if page is loaded
+    {
+        cout<<"     Hit:      ";
+        cout<<"page  "<<current_page.page_num<<"                                        ";
+        
+
+        for (int i=0; i<frames_vec.size(); i++)
+        {
+            if(frames_vec[i].page_num == current_page.page_num)
+            {
+                if (current_page.r_register == 'W' && frames_vec[i].r_register == 'R')
+                    frames_vec[i].r_register = 'W';
+            }
+        }
+
+        bool if_swap = false;
+        for(int i=0; i<frames_vec.size(); i++)
+        {
+            if(if_swap)
+                swap(frames_vec[i], frames_vec[i-1]);
+
+            if(frames_vec[i].page_num == current_page.page_num)
+                if_swap = true;
+        }
+    }else
+    {
+        cout<<"    Miss:       ";
+
+        page_fault ++;
+        total_disk_reads++;
+
+        if(frames_vec.size() < page_frames_num_)  //page frames is not full
+        {
+            // cout<<"frames_vec size:"<<frames_vec.size()<<" < page_frames_num:  "<<page_frames_num_;
+            frames_vec.push_back(current_page);  //add the page to the frames last
+            cout<<" page  "<<current_page.page_num;
+            cout<<"                       ";
+            
+        }else // frames have no space
+        {
+            // frames_vec[0].is_dirty == true; // set victim is_dirty = true
+            cout<<" page  "<<current_page.page_num;
+
+            bool f = false;
+            // if (frames_vec[0].is_dirty == true)
+            if (frames_vec[0].r_register == 'W')
+            {
+                // cout<<"  (DIRTY)  ";
+                total_disk_writes++;
+                f = true;
+            }
+            cout<<"  REPLACE: page   "<<frames_vec[0].page_num<<"                        ";
+            frames_vec.erase(frames_vec.begin());  // remove the victim page (first page)
+            
+            if(f == true)
+                cout<<"(DIRTY)          ";
+            frames_vec.push_back(current_page);
+        }
+    
+    }
+}
+
+
 void run(string algorithm_name, int page_frame_num)
 { 
     // cout<<"\ninitialise frames_vec.....   page frame num: "<<page_frame_num<<"   ";
@@ -153,7 +218,7 @@ void run(string algorithm_name, int page_frame_num)
                 FIFO(page_frame_num, pages_vec[i]);
             }else if(algorithm_name == "LRU")
             {
-
+                LRU(page_frame_num, pages_vec[i]);
             }else if(algorithm_name == "ARB")
             {
                 
@@ -178,7 +243,8 @@ void run(string algorithm_name, int page_frame_num)
                 
             }else if(algorithm_name == "LRU")
             {
-
+                pages_vec[i].is_dirty = true;
+                LRU(page_frame_num, pages_vec[i]);
             }else if(algorithm_name == "ARB")
             {
                 
