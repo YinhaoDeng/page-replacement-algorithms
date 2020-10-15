@@ -85,10 +85,10 @@ void FIFO(int page_frames_num_, Page current_page) //有几个内存块
         {
             if(frames_vec[i].page_num == current_page.page_num)
             {
-                // if(current_page.r_register == 'R' && frames_vec[i].r_register == 'W')
-                //     frames_vec[i].r_register = 'R';
-                if (current_page.r_register == 'W' && frames_vec[i].r_register == 'R')
-                    frames_vec[i].r_register = 'W';
+                // if(current_page.r_or_w == 'R' && frames_vec[i].r_or_w == 'W')
+                //     frames_vec[i].r_or_w = 'R';
+                if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
+                    frames_vec[i].r_or_w = 'W';
             }
         }
     }else
@@ -112,7 +112,7 @@ void FIFO(int page_frames_num_, Page current_page) //有几个内存块
 
             bool f = false;
             // if (frames_vec[0].is_dirty == true)
-            if (frames_vec[0].r_register == 'W')
+            if (frames_vec[0].r_or_w == 'W')
             {
                 // cout<<"  (DIRTY)  ";
                 total_disk_writes++;
@@ -141,8 +141,8 @@ void LRU(int page_frames_num_, Page current_page)
         {
             if(frames_vec[i].page_num == current_page.page_num)
             {
-                if (current_page.r_register == 'W' && frames_vec[i].r_register == 'R')
-                    frames_vec[i].r_register = 'W';
+                if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
+                    frames_vec[i].r_or_w = 'W';
             }
         }
 
@@ -176,7 +176,7 @@ void LRU(int page_frames_num_, Page current_page)
 
             bool f = false;
             // if (frames_vec[0].is_dirty == true)
-            if (frames_vec[0].r_register == 'W')
+            if (frames_vec[0].r_or_w == 'W')
             {
                 // cout<<"  (DIRTY)  ";
                 total_disk_writes++;
@@ -210,7 +210,7 @@ void run(string algorithm_name, int page_frame_num)
         cout<<"Time:   "<<i+1;
         events_in_trace ++;
 
-        if (pages_vec[i].r_register == 'R')
+        if (pages_vec[i].r_or_w == 'R')
         {
              // algorithm name:
             if (algorithm_name == "FIFO")
@@ -233,7 +233,7 @@ void run(string algorithm_name, int page_frame_num)
                 return;
             }
             
-        }else if(pages_vec[i].r_register == 'W')
+        }else if(pages_vec[i].r_or_w == 'W')
         {
              // algorithm name:
             if (algorithm_name == "FIFO")
