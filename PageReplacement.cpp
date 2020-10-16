@@ -16,6 +16,7 @@ Contact Email: yinhao.deng@student.adelaide.edu.au
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+
 // #include "page.cpp"
 #include "helper.cpp"
 
@@ -25,8 +26,13 @@ int total_disk_reads = 0;
 int total_disk_writes = 0;
 int page_fault = 0;
 
+
 vector<Page> pages_vec;
 vector<Page> frames_vec;
+
+
+int bits = 0;
+int interval = 0;
 
 
 void read_txt_input(string filename, int page_size)
@@ -194,70 +200,111 @@ void LRU(int page_frames_num_, Page current_page)
 }
 
 
+void ARB(int page_frames_num_, Page current_page)
+{
+    if(events_in_trace % interval == 0)
+        right_shift(frames_vec);
+    
+
+    if(check_if_in_vec(frames_vec, current_page)) // if page is loaded
+    {
+        cout<<"     Hit:      ";
+        cout<<"page  "<<current_page.page_num<<"                                        ";
+        
+        current_page.r_register[0] = 1;
+
+        for (int i=0; i<frames_vec.size(); i++)
+        {
+            if(frames_vec[i].page_num == current_page.page_num)
+            {
+         
+                if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
+                    frames_vec[i].r_or_w = 'W';
+            }
+        }
+    }else
+    {
+        cout<<"    Miss:       ";
+
+        current_page.r_register[0] = 1;
+
+        page_fault ++;
+        total_disk_reads++;
+        
+
+        if(frames_vec.size() < page_frames_num_)  //page frames is not full
+        {
+            // cout<<"frames_vec size:"<<frames_vec.size()<<" < page_frames_num:  "<<page_frames_num_;
+            frames_vec.push_back(current_page);  //add the page to the frames last
+            cout<<" page  "<<current_page.page_num;
+            cout<<"                       ";
+            
+        }
+        else // frames have no space
+        {
+            // frames_vec[0].is_dirty == true; // set victim is_dirty = true
+            cout<<" page  "<<current_page.page_num;
+
+            // bool f = false;
+            // // if (frames_vec[0].is_dirty == true)
+            // if (frames_vec[0].r_or_w == 'W')
+            // {
+            //     // cout<<"  (DIRTY)  ";
+            //     total_disk_writes++;
+            //     f = true;
+            // }
+            // cout<<"  REPLACE: page   "<<frames_vec[0].page_num<<"                        ";
+            // frames_vec.erase(frames_vec.begin());  // remove the victim page (first page)
+            
+            // if(f == true)
+            //     cout<<"(DIRTY)          ";
+            // frames_vec.push_back(current_page);
+        }
+    }
+    
+}
+
 void run(string algorithm_name, int page_frame_num)
 { 
-    // cout<<"\ninitialise frames_vec.....   page frame num: "<<page_frame_num<<"   ";
-    // for(int i=0; i<page_frame_num; i++)
-    // {
-    //     frames_vec.push_back(Page());
-    //     cout<<frames_vec[i].page_num<<" ";
-    // }
-    // cout<<endl;
-    // return;
+
+    // initialise r_register for ARU  algorithm
+    if(bits>1)
+    {
+        for(int j=0; j<pages_vec.size(); j++)
+        {
+            deque<int> temp_deque;
+            for(int i=0; i<bits; i++)
+                temp_deque.push_back(0);
+            pages_vec[j].r_register = temp_deque;
+        }
+    }
+
 
     for(int i=0; i<pages_vec.size(); i++) // this for loop is like a timer
     {
         cout<<"Time:   "<<i+1;
         events_in_trace ++;
 
-        if (pages_vec[i].r_or_w == 'R')
-        {
              // algorithm name:
-            if (algorithm_name == "FIFO")
-            {
-                FIFO(page_frame_num, pages_vec[i]);
-            }else if(algorithm_name == "LRU")
-            {
-                LRU(page_frame_num, pages_vec[i]);
-            }else if(algorithm_name == "ARB")
-            {
-                
-            }else if(algorithm_name == "WSARB-1")
-            {
-                
-            }else if(algorithm_name == "WSARB-2")
-            {
-                
-            }else{
-                cout<<"wrong algorithm name!"<<endl;
-                return;
-            }
+        if (algorithm_name == "FIFO")
+        {
+            FIFO(page_frame_num, pages_vec[i]);
+        }else if(algorithm_name == "LRU")
+        {
+            LRU(page_frame_num, pages_vec[i]);
+        }else if(algorithm_name == "ARB")
+        {
             
-        }else if(pages_vec[i].r_or_w == 'W')
+            ARB(page_frame_num, pages_vec[i]);
+        }else if(algorithm_name == "WSARB-1")
         {
-             // algorithm name:
-            if (algorithm_name == "FIFO")
-            {
-                pages_vec[i].is_dirty = true;
-                FIFO(page_frame_num, pages_vec[i]);
-                
-            }else if(algorithm_name == "LRU")
-            {
-                pages_vec[i].is_dirty = true;
-                LRU(page_frame_num, pages_vec[i]);
-            }else if(algorithm_name == "ARB")
-            {
-                
-            }else if(algorithm_name == "WSARB-1")
-            {
-                
-            }else if(algorithm_name == "WSARB-2")
-            {
-                
-            }else{
-                cout<<"wrong algorithm name!"<<endl;
-                return;
-            }
+            
+        }else if(algorithm_name == "WSARB-2")
+        {
+            
+        }else{
+            cout<<"wrong algorithm name!"<<endl;
+            return;
         }
 
 
@@ -283,8 +330,16 @@ int main(int argc, char ** argv)
     int page_size = stoi(argv[2]);
     int page_frames_num = stoi(argv[3]);
     string alg_name = argv[4];
+    // int bits,interval;
 
-    // cout<<page_size<<" "<<page_frames_num<<" "<< alg_name<<endl;
+    if(argc>5)
+    {
+        bits = stoi(argv[5]);
+        interval = stoi(argv[6]);
+    }
+    
+    cout<<bits<<" "<<interval<<endl;
+
 
     cout<<"\nread input:"<<endl;
     read_txt_input(argv[1], page_size);  // read the input.txt and store pages into pages_vec
