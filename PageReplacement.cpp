@@ -31,8 +31,8 @@ vector<Page> pages_vec;
 vector<Page> frames_vec;
 
 
-int bits = 0;
-int interval = 0;
+int bits;
+int interval;
 
 
 
@@ -399,15 +399,14 @@ int main(int argc, char ** argv)
     int page_size = stoi(argv[2]);
     int page_frames_num = stoi(argv[3]);
     string alg_name = argv[4];
-    bits = stoi(argv[5]);
-    interval = stoi(argv[6]);
+    // bits = stoi(argv[5]);
+    // interval = stoi(argv[6]);
     
-    // int bits,interval;
-    // if(argc>5)
-    // {
-    //     bits = stoi(argv[5]);
-    //     interval = stoi(argv[6]);
-    // }
+    if(argc>5)
+    {
+        bits = stoi(argv[5]);
+        interval = stoi(argv[6]);
+    }
 
     cout<<"\nread input:"<<endl;
     read_txt_input(argv[1], page_size);  // read the input.txt and store pages into pages_vec
