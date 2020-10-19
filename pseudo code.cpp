@@ -73,7 +73,7 @@ function void WARGB1 (page_Frame, pageNum)
 	if (cuurent_time % interval == 0)
 		all page in pageFrame r_register >>> 1
 
-	calculate eache page in Frame counter in the window size;
+	calculate each page in Frame counter in the window size;
 
 	if pageNum is in Frame:
 		page.r_register[0] = 1
@@ -83,7 +83,7 @@ function void WARGB1 (page_Frame, pageNum)
 		else
 			victim = the smallest counter, then the smallest r_register
 			if victim is dirty:  diskWrite++
-			remove the victime. then add the page into last
+			remove the victim. then add the page into last
 }
 
 
@@ -92,18 +92,17 @@ function void WARGB2 (page_Frame, pageNum)
 	if (cuurent_time % interval == 0)
 		all page in pageFrame r_register >>> 1
 
-	calculate eache page in Frame counter in the window size;
+	calculate each page in Frame counter in the window size;
 
 	if pageNum is in Frame:
 		page.r_register[0] = 1
 	else
 		page.r_register[0] = 1
-		if page_Frame is not full: 
-			add the page into last
+		if page_Frame is not full: add the page into last
 		else
 			victim = the smallest r_register then the smallest counter
 			if victim is dirty:  diskWrite++
-			remove the victime. then add the page into last
+			remove the victim. then add the page into last
 }
 
 

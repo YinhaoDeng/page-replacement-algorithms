@@ -10,6 +10,7 @@
         "utility": "cpp",
         "deque": "cpp",
         "initializer_list": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "queue": "cpp"
     }
 }

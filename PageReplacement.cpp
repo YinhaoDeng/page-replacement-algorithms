@@ -11,7 +11,6 @@ Contact Email: yinhao.deng@student.adelaide.edu.au
 #include <fstream>
 #include <vector>
 #include <string>
-#include <queue>
 
 #include <iostream>
 #include <iomanip>
@@ -29,10 +28,11 @@ int page_fault = 0;
 
 vector<Page> pages_vec;
 vector<Page> frames_vec;
-
+deque<Page> WS_dq;
 
 int bits;
 int interval;
+int WS_size;
 
 
 
@@ -67,15 +67,6 @@ void read_txt_input(string filename, int page_size)
         }
     }
     in_file.close(); // close input.txt file
-
-    // events_in_trace = line_number - 1;  // assign events in trace???????????????????????????????
-    // cout<<"events in trace: "<<events_in_trace<<endl; //??????????????????????????????????????????
-
-    // print what is in pages_vec
-    // for(int i=0; i<pages_vec.size(); i++)
-    // {
-    //     cout<<pages_vec[i].page_num<<" ";
-    // }
     return;
 }
 
@@ -202,7 +193,7 @@ void LRU(int page_frames_num_, Page current_page)
 }
 
 
-int find_victim_page_idx_ARU(vector<Page> frames_vec_, int bits)
+int find_victim_idx_based_on_r_register(vector<Page> frames_vec_, int bits)
 {
     vector<int> idx;
     for(int i=0; i<frames_vec_.size();i++)
@@ -253,6 +244,10 @@ int find_victim_page_idx_ARU(vector<Page> frames_vec_, int bits)
 }
 
 
+void right_shift(vector<Page> frames_vec)
+{
+    
+}
 
 
 void ARB(int page_frames_num_, Page current_page)
@@ -272,13 +267,11 @@ void ARB(int page_frames_num_, Page current_page)
     {
         cout<<"     Hit:      ";
         cout<<"page  "<<current_page.page_num<<"                                        ";
-   
 
         for (int i=0; i<frames_vec.size(); i++)
         {
             if(frames_vec[i].page_num == current_page.page_num)
             {
-                // cout<<"        ["<<i<<"]          ";
                 if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
                     frames_vec[i].r_or_w = 'W';
                 frames_vec[i].r_register[0]=1;
@@ -309,8 +302,7 @@ void ARB(int page_frames_num_, Page current_page)
             cout<<" page  "<<current_page.page_num;
 
             //find the victim page
-            int victim_idx = find_victim_page_idx_ARU(frames_vec, bits);
-
+            int victim_idx = find_victim_idx_based_on_r_register(frames_vec, bits);
 
             bool f = false;
             if (frames_vec[victim_idx].r_or_w == 'W')
@@ -319,8 +311,6 @@ void ARB(int page_frames_num_, Page current_page)
                 f = true;
             }
 
-
-            // cout<<"victim_idx: ["<<victim_idx<<"]";
             cout<<"  REPLACE: page   "<<frames_vec[victim_idx].page_num<<"        ";
             frames_vec.erase(frames_vec.begin()+victim_idx);  // remove the victim page
             
@@ -330,8 +320,174 @@ void ARB(int page_frames_num_, Page current_page)
             frames_vec.push_back(current_page);
         }
     }
-    
 }
+
+
+
+void WSARB_1(int page_frames_num_, Page current_page)
+{
+    if((events_in_trace-1) % interval == 0)
+    {   
+        cout<<"right shift";
+        for(int i=0; i<frames_vec.size(); i++)
+        {
+            frames_vec[i].r_register.push_front(0);  // add new reference bit as 0
+            frames_vec[i].r_register.pop_back(); // abandon the last one of reference bits
+        }
+    }
+
+
+    //update current working set
+    if(WS_dq.size() < WS_size) // if Working set has room
+        WS_dq.push_back(current_page);
+    else // working set is full
+    {
+        WS_dq.pop_front();// clean the deque tail
+        WS_dq.push_back(current_page);// add current page to WS front
+    }
+    
+
+    if(check_if_in_vec(frames_vec, current_page)) // if page is in frames
+    {
+        cout<<"     Hit:      ";
+        cout<<"page  "<<current_page.page_num<<"                                        ";
+
+        for (int i=0; i<frames_vec.size(); i++)
+        {
+            if(frames_vec[i].page_num == current_page.page_num)
+            {
+                if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
+                    frames_vec[i].r_or_w = 'W';
+                frames_vec[i].r_register[0] = 1; //this page has been called
+            }
+        }
+    }else
+    {
+        cout<<"    Miss:       ";
+
+        current_page.r_register[0] = 1;
+
+        page_fault ++;
+        total_disk_reads++;
+        
+
+        if(frames_vec.size() < page_frames_num_)  //page frames is not full
+        {
+            // cout<<"frames_vec size:"<<frames_vec.size()<<" < page_frames_num:  "<<page_frames_num_;
+            frames_vec.push_back(current_page);  //add the page to the frames last
+            cout<<" page  "<<current_page.page_num;
+            cout<<"                       ";
+            
+        }
+        else // frames have no space
+        {
+            cout<<" page  "<<current_page.page_num;
+
+            // simplify the WS
+            vector<Page> WS_simple_vec;
+            
+            // cout<<endl<<"WS:"<<endl;
+            // //cout WS_simple vec for debug
+            // for(int i=0; i<WS_dq.size();i++)
+            // {
+            //     cout<<WS_dq[i].page_num<<"["<<WS_dq[i].c_counter<<"]  ";
+            // }
+            // cout<<endl;
+
+
+            cout<<endl;
+            for(int i=0; i<WS_dq.size(); i++)
+            {
+                bool if_in = false;
+                for(int j=0; j<WS_simple_vec.size(); j++)
+                {
+                    if(WS_dq[i].page_num == WS_simple_vec[j].page_num)
+                    {
+                        if_in = true;
+                        break;
+                    }
+                }
+
+                if(if_in == false)
+                {
+                    WS_simple_vec.push_back(WS_dq[i]);
+                }
+            }
+
+            
+            // cout<<endl<<"WS_simple:"<<endl;
+            // //cout WS_simple vec for debug
+            // for(int i=0; i<WS_simple_vec.size();i++)
+            // {
+            //     cout<<WS_simple_vec[i].page_num<<"["<<WS_simple_vec[i].c_counter<<"]  ";
+            // }
+            // cout<<endl<<endl<<endl;
+
+
+
+            // find min c_counter
+            int min_c_counter = 1000;
+            for (int i=0; i< WS_simple_vec.size(); i++)
+            {
+                if(WS_simple_vec[i].c_counter<min_c_counter)
+                {
+                    min_c_counter = WS_simple_vec[i].c_counter;
+                }
+            }
+
+            
+
+            vector<Page> min_c_vec;
+            for(int i=0; i<WS_simple_vec.size(); i++) // find the page with min c_counter
+            {
+                if(WS_simple_vec[i].c_counter == min_c_counter)
+                    min_c_vec.push_back(WS_simple_vec[i]);
+            }
+
+
+            //find the victim page
+            int victim_idx = -1;
+            if(min_c_vec.size()==1)
+            {
+                for(int i=0; i<WS_dq.size(); i++)
+                {
+                    if(frames_vec[i].page_num = min_c_vec[0].page_num)
+                        victim_idx = i;
+                        break;
+                }
+            }
+            else if(min_c_vec.size()>1) // if there are more than one page with min c_counter, then we compare their r_registers
+            {
+                victim_idx = find_victim_idx_based_on_r_register(min_c_vec, bits); // FIFO included
+            }
+
+            cout<<"victim page idx: ["<<victim_idx<<"]"<<endl;
+            bool f = false;
+            if (frames_vec[victim_idx].r_or_w == 'W')
+            {
+                total_disk_writes++;
+                f = true;
+            }
+
+            cout<<"  REPLACE: page   "<<frames_vec[victim_idx].page_num<<"        ";
+            frames_vec.erase(frames_vec.begin()+victim_idx);  // remove the victim page
+            
+            if(f == true)
+                cout<<"(DIRTY)          "; 
+
+            frames_vec.push_back(current_page);
+        }
+    }
+}
+    
+
+
+
+void WSARB_2(int page_frames_num_, Page current_page)
+{
+
+}
+
 
 void run(string algorithm_name, int page_frame_num)
 { 
@@ -362,11 +518,10 @@ void run(string algorithm_name, int page_frame_num)
         else if(algorithm_name == "ARB")
             ARB(page_frame_num, pages_vec[i]);
         else if(algorithm_name == "WSARB-1")
-        {    
-        }else if(algorithm_name == "WSARB-2")
-        {
-            
-        }else{
+            WSARB_1(page_frame_num, pages_vec[i]);
+        else if(algorithm_name == "WSARB-2")
+            WSARB_2(page_frame_num, pages_vec[i]);
+        else{
             cout<<"wrong algorithm name!"<<endl;
             return;
         }
@@ -375,12 +530,9 @@ void run(string algorithm_name, int page_frame_num)
         cout<<"frames after excution: ";
         for(int i=0; i<frames_vec.size(); i++)
         {
-            
             cout<<frames_vec[i].page_num<<" (";
             for(deque<int>::iterator t=frames_vec[i].r_register.begin(); t!=frames_vec[i].r_register.end(); t++)
-            {
                 cout<<*t;
-            }
             cout<<") ";
         }
         cout<<endl;
@@ -399,14 +551,16 @@ int main(int argc, char ** argv)
     int page_size = stoi(argv[2]);
     int page_frames_num = stoi(argv[3]);
     string alg_name = argv[4];
-    // bits = stoi(argv[5]);
-    // interval = stoi(argv[6]);
+   
     
     if(argc>5)
     {
         bits = stoi(argv[5]);
         interval = stoi(argv[6]);
     }
+    if(argc>7)
+        WS_size = stoi(argv[7]);
+
 
     cout<<"\nread input:"<<endl;
     read_txt_input(argv[1], page_size);  // read the input.txt and store pages into pages_vec
