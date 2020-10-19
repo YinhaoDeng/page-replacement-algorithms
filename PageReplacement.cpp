@@ -386,16 +386,15 @@ void WSARB_1(int page_frames_num_, Page current_page)
             // simplify the WS
             vector<Page> WS_simple_vec;
             
-            // cout<<endl<<"WS:"<<endl;
-            // //cout WS_simple vec for debug
-            // for(int i=0; i<WS_dq.size();i++)
-            // {
-            //     cout<<WS_dq[i].page_num<<"["<<WS_dq[i].c_counter<<"]  ";
-            // }
-            // cout<<endl;
+            cout<<endl<<"WS: {";
+            //cout WS_simple vec for debug
+            for(int i=0; i<WS_dq.size();i++)
+            {
+                cout<<WS_dq[i].page_num<<" ";
+            }
+            cout<<"}"<<endl;
 
 
-            cout<<endl;
             for(int i=0; i<WS_dq.size(); i++)
             {
                 bool if_in = false;
@@ -403,6 +402,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
                 {
                     if(WS_dq[i].page_num == WS_simple_vec[j].page_num)
                     {
+                        WS_simple_vec[j].c_counter++;
                         if_in = true;
                         break;
                     }
@@ -410,19 +410,19 @@ void WSARB_1(int page_frames_num_, Page current_page)
 
                 if(if_in == false)
                 {
+                    WS_dq[i].c_counter++;
                     WS_simple_vec.push_back(WS_dq[i]);
                 }
             }
 
             
-            // cout<<endl<<"WS_simple:"<<endl;
-            // //cout WS_simple vec for debug
-            // for(int i=0; i<WS_simple_vec.size();i++)
-            // {
-            //     cout<<WS_simple_vec[i].page_num<<"["<<WS_simple_vec[i].c_counter<<"]  ";
-            // }
-            // cout<<endl<<endl<<endl;
-
+            cout<<endl<<"WS_simple:"<<endl;
+            //cout WS_simple vec for debug
+            for(int i=0; i<WS_simple_vec.size();i++)
+            {
+                cout<<WS_simple_vec[i].page_num<<"["<<WS_simple_vec[i].c_counter<<"]  ";
+            }
+            cout<<""<<endl;
 
 
             // find min c_counter
@@ -430,9 +430,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
             for (int i=0; i< WS_simple_vec.size(); i++)
             {
                 if(WS_simple_vec[i].c_counter<min_c_counter)
-                {
                     min_c_counter = WS_simple_vec[i].c_counter;
-                }
             }
 
             
@@ -476,6 +474,11 @@ void WSARB_1(int page_frames_num_, Page current_page)
                 cout<<"(DIRTY)          "; 
 
             frames_vec.push_back(current_page);
+
+
+            // reset c_counter to 0
+            for(int i=0; i<WS_dq.size(); i++)
+                WS_dq[i].c_counter = 0;
         }
     }
 }
@@ -491,6 +494,7 @@ void WSARB_2(int page_frames_num_, Page current_page)
 
 void run(string algorithm_name, int page_frame_num)
 { 
+    cout<<"------------------------------"<<endl;
 
     // initialise r_register for ARU  algorithm
     if(bits>1)
