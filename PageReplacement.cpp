@@ -342,6 +342,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
         WS_dq.push_back(current_page);
     else // working set is full
     {
+        WS_dq.front().c_counter --; // this page leaves WS
         WS_dq.pop_front();// clean the deque tail
         WS_dq.push_back(current_page);// add current page to WS front
     }
@@ -352,15 +353,19 @@ void WSARB_1(int page_frames_num_, Page current_page)
         cout<<"     Hit:      ";
         cout<<"page  "<<current_page.page_num<<"                                        ";
 
+       
         for (int i=0; i<frames_vec.size(); i++)
         {
             if(frames_vec[i].page_num == current_page.page_num)
             {
                 if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
                     frames_vec[i].r_or_w = 'W';
-                frames_vec[i].r_register[0] = 1; //this page has been called
+                frames_vec[i].r_register[0] = 1;  // update r_register
+                frames_vec[i].c_counter ++;
             }
         }
+
+
     }else
     {
         cout<<"    Miss:       ";
@@ -374,6 +379,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
         if(frames_vec.size() < page_frames_num_)  //page frames is not full
         {
             // cout<<"frames_vec size:"<<frames_vec.size()<<" < page_frames_num:  "<<page_frames_num_;
+            current_page.c_counter++; // frames has room
             frames_vec.push_back(current_page);  //add the page to the frames last
             cout<<" page  "<<current_page.page_num;
             cout<<"                       ";
@@ -383,71 +389,38 @@ void WSARB_1(int page_frames_num_, Page current_page)
         {
             cout<<" page  "<<current_page.page_num;
 
-            // simplify the WS
-            vector<Page> WS_simple_vec;
-            
-            cout<<endl<<"WS: {";
-            //cout WS_simple vec for debug
-            for(int i=0; i<WS_dq.size();i++)
-            {
-                cout<<WS_dq[i].page_num<<" ";
-            }
-            cout<<"}"<<endl;
-
-
-            for(int i=0; i<WS_dq.size(); i++)
-            {
-                bool if_in = false;
-                for(int j=0; j<WS_simple_vec.size(); j++)
-                {
-                    if(WS_dq[i].page_num == WS_simple_vec[j].page_num)
-                    {
-                        WS_simple_vec[j].c_counter++;
-                        if_in = true;
-                        break;
-                    }
-                }
-
-                if(if_in == false)
-                {
-                    WS_dq[i].c_counter++;
-                    WS_simple_vec.push_back(WS_dq[i]);
-                }
-            }
-
-            
-            cout<<endl<<"WS_simple:"<<endl;
-            //cout WS_simple vec for debug
-            for(int i=0; i<WS_simple_vec.size();i++)
-            {
-                cout<<WS_simple_vec[i].page_num<<"["<<WS_simple_vec[i].c_counter<<"]  ";
-            }
-            cout<<""<<endl;
+           
 
 
             // find min c_counter
             int min_c_counter = 1000;
-            for (int i=0; i< WS_simple_vec.size(); i++)
+            for (int i=0; i< frames_vec.size(); i++)
             {
-                if(WS_simple_vec[i].c_counter<min_c_counter)
-                    min_c_counter = WS_simple_vec[i].c_counter;
+                if(frames_vec[i].c_counter<min_c_counter)
+                    min_c_counter = frames_vec[i].c_counter;
             }
-
+            // I got the minimun c_counter value
             
 
-            vector<Page> min_c_vec;
-            for(int i=0; i<WS_simple_vec.size(); i++) // find the page with min c_counter
+            vector<Page> min_c_vec; // look for all the pages which have the same c_counter value as the min c_counter value
+            for(int i=0; i<frames_vec.size(); i++) // find the page with min c_counter
             {
-                if(WS_simple_vec[i].c_counter == min_c_counter)
-                    min_c_vec.push_back(WS_simple_vec[i]);
+                if(frames_vec[i].c_counter == min_c_counter)
+                    min_c_vec.push_back(frames_vec[i]);
             }
 
+            cout<<" -----> min_c_vec: {";
+            for (int i=0; i<min_c_vec.size(); i++)
+            {
+                cout<<min_c_vec[i].page_num<<" ["<<min_c_vec[i].c_counter<<"]";
+            }
+            cout<<"}"<<endl;
 
-            //find the victim page
+            //look for the victim page
             int victim_idx = -1;
             if(min_c_vec.size()==1)
             {
-                for(int i=0; i<WS_dq.size(); i++)
+                for(int i=0; i<frames_vec.size(); i++)
                 {
                     if(frames_vec[i].page_num = min_c_vec[0].page_num)
                         victim_idx = i;
@@ -473,12 +446,8 @@ void WSARB_1(int page_frames_num_, Page current_page)
             if(f == true)
                 cout<<"(DIRTY)          "; 
 
+            current_page.c_counter ++; //Miss, and frames are full.
             frames_vec.push_back(current_page);
-
-
-            // reset c_counter to 0
-            for(int i=0; i<WS_dq.size(); i++)
-                WS_dq[i].c_counter = 0;
         }
     }
 }
@@ -494,7 +463,7 @@ void WSARB_2(int page_frames_num_, Page current_page)
 
 void run(string algorithm_name, int page_frame_num)
 { 
-    cout<<"------------------------------"<<endl;
+    
 
     // initialise r_register for ARU  algorithm
     if(bits>1)
@@ -511,6 +480,7 @@ void run(string algorithm_name, int page_frame_num)
 
     for(int i=0; i<pages_vec.size(); i++) // this for loop is like a timer
     {
+        cout<<"-----------------------------------------------------------------------------"<<endl;
         cout<<"Time:   "<<i+1;
         events_in_trace ++;
 
