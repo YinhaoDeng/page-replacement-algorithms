@@ -239,9 +239,9 @@ int find_victim_idx_based_on_r_register(vector<Page> frames_vec_, int bits)
         else
             continue;
     }
-
-    // return -3;
 }
+
+void FIFO()
 
 
 void right_shift(vector<Page> frames_vec)
@@ -342,7 +342,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
         WS_dq.push_back(current_page);
     else // working set is full
     {
-        WS_dq.front().c_counter --; // this page leaves WS
+        WS_dq.front().c_counter --;
         WS_dq.pop_front();// clean the deque tail
         WS_dq.push_back(current_page);// add current page to WS front
     }
@@ -352,19 +352,17 @@ void WSARB_1(int page_frames_num_, Page current_page)
     {
         cout<<"     Hit:      ";
         cout<<"page  "<<current_page.page_num<<"                                        ";
-
        
         for (int i=0; i<frames_vec.size(); i++)
         {
             if(frames_vec[i].page_num == current_page.page_num)
             {
+                frames_vec[i].c_counter ++;
                 if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
                     frames_vec[i].r_or_w = 'W';
                 frames_vec[i].r_register[0] = 1;  // update r_register
-                frames_vec[i].c_counter ++;
             }
         }
-
 
     }else
     {
@@ -379,7 +377,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
         if(frames_vec.size() < page_frames_num_)  //page frames is not full
         {
             // cout<<"frames_vec size:"<<frames_vec.size()<<" < page_frames_num:  "<<page_frames_num_;
-            current_page.c_counter++; // frames has room
+            current_page.c_counter++;
             frames_vec.push_back(current_page);  //add the page to the frames last
             cout<<" page  "<<current_page.page_num;
             cout<<"                       ";
@@ -388,9 +386,6 @@ void WSARB_1(int page_frames_num_, Page current_page)
         else // frames have no space
         {
             cout<<" page  "<<current_page.page_num;
-
-           
-
 
             // find min c_counter
             int min_c_counter = 1000;
@@ -412,7 +407,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
             cout<<" -----> min_c_vec: {";
             for (int i=0; i<min_c_vec.size(); i++)
             {
-                cout<<min_c_vec[i].page_num<<" ["<<min_c_vec[i].c_counter<<"]";
+                cout<<min_c_vec[i].page_num<<"["<<min_c_vec[i].c_counter<<"]  ";
             }
             cout<<"}"<<endl;
 
@@ -441,6 +436,7 @@ void WSARB_1(int page_frames_num_, Page current_page)
             }
 
             cout<<"  REPLACE: page   "<<frames_vec[victim_idx].page_num<<"        ";
+            frames_vec[victim_idx].c_counter = 0;
             frames_vec.erase(frames_vec.begin()+victim_idx);  // remove the victim page
             
             if(f == true)
@@ -454,7 +450,6 @@ void WSARB_1(int page_frames_num_, Page current_page)
     
 
 
-
 void WSARB_2(int page_frames_num_, Page current_page)
 {
 
@@ -463,8 +458,6 @@ void WSARB_2(int page_frames_num_, Page current_page)
 
 void run(string algorithm_name, int page_frame_num)
 { 
-    
-
     // initialise r_register for ARU  algorithm
     if(bits>1)
     {
@@ -504,7 +497,7 @@ void run(string algorithm_name, int page_frame_num)
         cout<<"frames after excution: ";
         for(int i=0; i<frames_vec.size(); i++)
         {
-            cout<<frames_vec[i].page_num<<" (";
+            cout<<frames_vec[i].page_num<<" ["<<frames_vec[i].c_counter<<"] (";
             for(deque<int>::iterator t=frames_vec[i].r_register.begin(); t!=frames_vec[i].r_register.end(); t++)
                 cout<<*t;
             cout<<") ";
