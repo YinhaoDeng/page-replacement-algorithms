@@ -241,13 +241,6 @@ int find_victim_idx_based_on_r_register(vector<Page> frames_vec_, int bits)
     }
 }
 
-void FIFO()
-
-
-void right_shift(vector<Page> frames_vec)
-{
-    
-}
 
 
 void ARB(int page_frames_num_, Page current_page)
@@ -452,7 +445,182 @@ void WSARB_1(int page_frames_num_, Page current_page)
 
 void WSARB_2(int page_frames_num_, Page current_page)
 {
+    if((events_in_trace-1) % interval == 0)
+    {   
+        cout<<"right shift";
+        for(int i=0; i<frames_vec.size(); i++)
+        {
+            frames_vec[i].r_register.push_front(0);  // add new reference bit as 0
+            frames_vec[i].r_register.pop_back(); // abandon the last one of reference bits
+        }
+    }
 
+
+    //update current working set
+    if(WS_dq.size() < WS_size) // if Working set has room
+        WS_dq.push_back(current_page);
+    else // working set is full
+    {
+        WS_dq.front().c_counter --;
+        WS_dq.pop_front();// clean the deque tail
+        WS_dq.push_back(current_page);// add current page to WS front
+    }
+    
+
+    if(check_if_in_vec(frames_vec, current_page)) // if page is in frames
+    {
+        cout<<"     Hit:      ";
+        cout<<"page  "<<current_page.page_num<<"                                        ";
+       
+        for (int i=0; i<frames_vec.size(); i++)
+        {
+            if(frames_vec[i].page_num == current_page.page_num)
+            {
+                frames_vec[i].c_counter ++;
+                if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
+                    frames_vec[i].r_or_w = 'W';
+                frames_vec[i].r_register[0] = 1;  // update r_register
+            }
+        }
+
+    }else
+    {
+        cout<<"    Miss:       ";
+
+        current_page.r_register[0] = 1;
+
+        page_fault ++;
+        total_disk_reads++;
+        
+
+        if(frames_vec.size() < page_frames_num_)  //page frames is not full
+        {
+            // cout<<"frames_vec size:"<<frames_vec.size()<<" < page_frames_num:  "<<page_frames_num_;
+            current_page.c_counter++;
+            frames_vec.push_back(current_page);  //add the page to the frames last
+            cout<<" page  "<<current_page.page_num;
+            cout<<"                       ";
+            
+        }
+        else // frames have no space
+        {
+            cout<<" page  "<<current_page.page_num;
+
+            // pick the victim
+            // pick by r_register
+            vector<int> idx;
+           
+            for(int i=0; i<frames_vec.size();i++) // initialise idx_vec
+                idx.push_back(0);
+
+            for(int i=0; i<bits; i++)    
+            {
+                //count how many 0s and 1s on ith bit.
+                int num_0 = 0;
+                int num_1 = 0;
+                
+                for(int j=0; j<frames_vec.size(); j++)
+                {
+                    if(idx[j]!=-1)
+                    {
+                        if (frames_vec[j].r_register[i] == 0)
+                            num_0 ++;
+                        else if (frames_vec[j].r_register[i] == 1)
+                            num_1 ++;
+                    }
+                }
+
+                if(num_0 == 0 || num_1 == 0) // all the same at the ith bit, continue to next bit
+                    continue;
+                else
+                {
+                    for(int a=0; a<frames_vec.size(); a++)
+                    {
+                        if (frames_vec[a].r_register[i] == 1)
+                            idx[a] = -1;
+                    }
+                }
+            }
+
+            vector<Page> min_r_vec;
+            for(int i=0; i<idx.size(); i++)
+            {
+                if(idx[i] == 0)
+                {
+                    min_r_vec.push_back(frames_vec[i]);
+                }
+            }
+            // we got a vector contains pages with min r_register value
+            
+            
+            int victim_idx = -1;
+            if(min_r_vec.size()==1)
+            {
+                for(int i=0; i<frames_vec.size(); i++)
+                {
+                    if(frames_vec[i].page_num == min_r_vec[0].page_num)
+                    {
+                        victim_idx = i;
+                        break;
+                    }
+                }
+            }else if (min_r_vec.size()>1)
+            {
+                // pick by c_counter
+                int min_c_counter = 1000;
+                for (int i=0; i< min_r_vec.size(); i++)
+                {
+                    if(min_r_vec[i].c_counter<min_c_counter)
+                        min_c_counter = min_r_vec[i].c_counter;
+                }
+                // I got the minimun c_counter value
+
+                vector<Page> min_c_vec; // look for all the pages which have the same c_counter value as the min c_counter value
+                for(int i=0; i<min_r_vec.size(); i++) // find the page with min c_counter
+                {
+                    if(min_r_vec[i].c_counter == min_c_counter)
+                        min_c_vec.push_back(min_r_vec[i]);
+                }
+
+                // cout<<" -----> min_c_vec: {";
+                // for (int i=0; i<min_c_vec.size(); i++)
+                // {
+                //     cout<<min_c_vec[i].page_num<<"["<<min_c_vec[i].c_counter<<"]  ";
+                // }
+                // cout<<"}"<<endl;
+
+                for(int i=0; i<frames_vec.size(); i++)
+                {
+                    if(frames_vec[i].page_num == min_c_vec[0].page_num)
+                    {
+                        victim_idx = i;
+                        break;
+                    }
+                }
+
+                
+            }
+      
+
+            cout<<"victim page idx: ["<<victim_idx<<"]"<<endl;
+            bool f = false;
+            if (frames_vec[victim_idx].r_or_w == 'W')
+            {
+                total_disk_writes++;
+                f = true;
+            }
+
+            cout<<"  REPLACE: page   "<<frames_vec[victim_idx].page_num<<"        ";
+            frames_vec[victim_idx].c_counter = 0;
+            frames_vec.erase(frames_vec.begin()+victim_idx);  // remove the victim page
+            
+            if(f == true)
+                cout<<"(DIRTY)          "; 
+
+            current_page.c_counter ++; //Miss, and frames are full.
+            frames_vec.push_back(current_page);
+        }
+    }
 }
 
 
