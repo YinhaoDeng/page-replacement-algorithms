@@ -84,8 +84,6 @@ void FIFO(int page_frames_num_, Page current_page) //有几个内存块
         {
             if(frames_vec[i].page_num == current_page.page_num)
             {
-                // if(current_page.r_or_w == 'R' && frames_vec[i].r_or_w == 'W')
-                //     frames_vec[i].r_or_w = 'R';
                 if (current_page.r_or_w == 'W' && frames_vec[i].r_or_w == 'R')
                     frames_vec[i].r_or_w = 'W';
             }
@@ -202,7 +200,6 @@ int find_victim_idx_based_on_r_register(vector<Page> frames_vec_, int bits)
 
     for(int i=0; i<bits; i++)    
     {
-
         //count how many 0s and 1s on ith bit.
         int num_0 = 0;
         int num_1 = 0;
@@ -315,7 +312,7 @@ void ARB(int page_frames_num_, Page current_page)
     }
 }
 
-
+    
 
 void WSARB_1(int page_frames_num_, Page current_page)
 {
@@ -329,17 +326,31 @@ void WSARB_1(int page_frames_num_, Page current_page)
         }
     }
 
-
     //update current working set
     if(WS_dq.size() < WS_size) // if Working set has room
         WS_dq.push_back(current_page);
     else // working set is full
     {
-        WS_dq.front().c_counter --;
+        for(int i=0; i<frames_vec.size(); i++)
+        {
+            if(frames_vec[i].page_num == WS_dq.front().page_num)
+            {
+                frames_vec[i].c_counter --;
+                break;
+            }
+        }
         WS_dq.pop_front();// clean the deque tail
         WS_dq.push_back(current_page);// add current page to WS front
     }
-    
+
+    cout<<"WS {";
+    for(int i=0; i<WS_dq.size();i++)
+    {
+        cout<<WS_dq[i].page_num<<" ";
+    }
+    cout<<"} ";
+   
+
 
     if(check_if_in_vec(frames_vec, current_page)) // if page is in frames
     {
@@ -366,6 +377,15 @@ void WSARB_1(int page_frames_num_, Page current_page)
         page_fault ++;
         total_disk_reads++;
         
+
+        // for(int i=0; i<frames_vec.size();i++)
+        // {
+        //     if(frames_vec[i].page_num == 58)
+        //     {
+        //         cout<<"~~~"<<frames_vec[i].page_num<<frames_vec[i].c_counter<<"~~~"<<endl;
+        //         break;
+        //     }
+        // }
 
         if(frames_vec.size() < page_frames_num_)  //page frames is not full
         {
@@ -414,10 +434,21 @@ void WSARB_1(int page_frames_num_, Page current_page)
                         victim_idx = i;
                         break;
                 }
+                cout<<"victim page in min_c_vec idx: ["<<victim_idx<<"]"<<endl;
             }
             else if(min_c_vec.size()>1) // if there are more than one page with min c_counter, then we compare their r_registers
             {
                 victim_idx = find_victim_idx_based_on_r_register(min_c_vec, bits); // FIFO included
+                cout<<"victim page in min_c_vec idx: ["<<victim_idx<<"]"<<endl;
+                for(int i=0; i<frames_vec.size(); i++)
+                {
+                    if(frames_vec[i].page_num == min_c_vec[victim_idx].page_num)
+                    {
+                        victim_idx = i;
+                        break;
+                    }
+                }
+               
             }
 
             cout<<"victim page idx: ["<<victim_idx<<"]"<<endl;
@@ -440,7 +471,6 @@ void WSARB_1(int page_frames_num_, Page current_page)
         }
     }
 }
-    
 
 
 void WSARB_2(int page_frames_num_, Page current_page)
