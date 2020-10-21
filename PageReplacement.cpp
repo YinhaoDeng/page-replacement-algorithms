@@ -35,8 +35,6 @@ int interval;
 int WS_size;
 
 
-
-
 void read_txt_input(string filename, int page_size)
 {
     char action; // read or write
@@ -378,15 +376,6 @@ void WSARB_1(int page_frames_num_, Page current_page)
         total_disk_reads++;
         
 
-        // for(int i=0; i<frames_vec.size();i++)
-        // {
-        //     if(frames_vec[i].page_num == 58)
-        //     {
-        //         cout<<"~~~"<<frames_vec[i].page_num<<frames_vec[i].c_counter<<"~~~"<<endl;
-        //         break;
-        //     }
-        // }
-
         if(frames_vec.size() < page_frames_num_)  //page frames is not full
         {
             // cout<<"frames_vec size:"<<frames_vec.size()<<" < page_frames_num:  "<<page_frames_num_;
@@ -491,11 +480,25 @@ void WSARB_2(int page_frames_num_, Page current_page)
         WS_dq.push_back(current_page);
     else // working set is full
     {
-        WS_dq.front().c_counter --;
+        for(int i=0; i<frames_vec.size(); i++)
+        {
+            if(frames_vec[i].page_num == WS_dq.front().page_num)
+            {
+                frames_vec[i].c_counter --;
+                break;
+            }
+        }
         WS_dq.pop_front();// clean the deque tail
         WS_dq.push_back(current_page);// add current page to WS front
     }
     
+    cout<<"WS {";
+    for(int i=0; i<WS_dq.size();i++)
+    {
+        cout<<WS_dq[i].page_num<<" ";
+    }
+    cout<<"} ";
+
 
     if(check_if_in_vec(frames_vec, current_page)) // if page is in frames
     {
@@ -536,8 +539,7 @@ void WSARB_2(int page_frames_num_, Page current_page)
         {
             cout<<" page  "<<current_page.page_num;
 
-            // pick the victim
-            // pick by r_register
+            // pick the victim based on r_register first
             vector<int> idx;
            
             for(int i=0; i<frames_vec.size();i++) // initialise idx_vec
@@ -576,9 +578,7 @@ void WSARB_2(int page_frames_num_, Page current_page)
             for(int i=0; i<idx.size(); i++)
             {
                 if(idx[i] == 0)
-                {
                     min_r_vec.push_back(frames_vec[i]);
-                }
             }
             // we got a vector contains pages with min r_register value
             
@@ -612,12 +612,7 @@ void WSARB_2(int page_frames_num_, Page current_page)
                         min_c_vec.push_back(min_r_vec[i]);
                 }
 
-                // cout<<" -----> min_c_vec: {";
-                // for (int i=0; i<min_c_vec.size(); i++)
-                // {
-                //     cout<<min_c_vec[i].page_num<<"["<<min_c_vec[i].c_counter<<"]  ";
-                // }
-                // cout<<"}"<<endl;
+                
 
                 for(int i=0; i<frames_vec.size(); i++)
                 {
@@ -627,8 +622,6 @@ void WSARB_2(int page_frames_num_, Page current_page)
                         break;
                     }
                 }
-
-                
             }
       
 
